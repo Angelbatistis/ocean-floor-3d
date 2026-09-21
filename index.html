@@ -115,9 +115,11 @@
         <div class="control-group">
             <div class="control-header">
                 <span>Water Layer Visibility</span>
-                <span id="water-val">90%</span>
+                <!-- Giusab ngadto sa 0% -->
+                <span id="water-val">0%</span>
             </div>
-            <input type="range" id="water-slider" min="0" max="100" value="90">
+            <!-- Giusab ang value ngadto sa 0 -->
+            <input type="range" id="water-slider" min="0" max="100" value="0">
         </div>
     </div>
 
@@ -228,7 +230,7 @@
         const waterMat = new THREE.MeshPhongMaterial({
             color: 0x0055ff,
             transparent: true,
-            opacity: 0.0, // Naka-set sa 90% base sa imahe
+            opacity: 0.0, // Initial visibility naka-set sa 0
             shininess: 0,
             side: THREE.DoubleSide,
             depthWrite: false
