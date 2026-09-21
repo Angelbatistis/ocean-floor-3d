@@ -103,7 +103,6 @@
 
     <div class="compass-rose"><div class="compass-arrow"></div><span>N</span></div>
 
-    <!-- ADJUSTMENT SLIDERS -->
     <div class="control-panel">
         <div class="control-group">
             <div class="control-header">
@@ -115,10 +114,8 @@
         <div class="control-group">
             <div class="control-header">
                 <span>Water Layer Visibility</span>
-                <!-- Giusab ngadto sa 0% -->
                 <span id="water-val">0%</span>
             </div>
-            <!-- Giusab ang value ngadto sa 0 -->
             <input type="range" id="water-slider" min="0" max="100" value="0">
         </div>
     </div>
@@ -145,7 +142,6 @@
         scene.background = new THREE.Color(0x05080f); 
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // Initial setup for the camera to match the 12 degree offset later
         camera.position.set(0, 45, 80);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -225,18 +221,18 @@
         scene.add(terrainMesh);
 
         // WATER SURFACE
-        const waterGeo = new THREE.PlaneGeometry(90, 50);
+        const waterGeo = new THREE.PlaneGeometry(90, 50, 120, 120); // Gidugangan pa ang segments para mas smooth ang dagkong balod
         waterGeo.rotateX(-Math.PI / 2);
         const waterMat = new THREE.MeshPhongMaterial({
             color: 0x0055ff,
             transparent: true,
-            opacity: 0.0, // Initial visibility naka-set sa 0
-            shininess: 0,
+            opacity: 0.0, 
+            shininess: 120, // Gitas-an pa gyud para nindot ang reflection sa dagkong balod
             side: THREE.DoubleSide,
             depthWrite: false
         });
         const waterMesh = new THREE.Mesh(waterGeo, waterMat);
-        waterMesh.position.y = 2.8; 
+        waterMesh.position.y = 3.5; // Gituyas pataas ang tubig aron dili mosangit ang dagkong balod sa yuta
         scene.add(waterMesh);
 
         // LABELS
@@ -280,7 +276,6 @@
         const waterSlider = document.getElementById('water-slider');
         const waterVal = document.getElementById('water-val');
 
-        // Function para mapulihan og blue line ang slider track paingon sa thumb
         function updateSliderTrack(elem) {
             const min = elem.min || 0;
             const max = elem.max || 100;
@@ -288,13 +283,11 @@
             elem.style.background = `linear-gradient(to right, #4f8aff ${percentage}%, #334155 ${percentage}%)`;
         }
 
-        // Action kung tandugon ang Rotation slider
         rotSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             rotVal.textContent = val + '°';
             updateSliderTrack(e.target);
             
-            // I-move ang camera pa-orbit base sa degree (ginamit ang math)
             const radius = camera.position.distanceTo(controls.target);
             const polar = controls.getPolarAngle();
             const azimuth = THREE.MathUtils.degToRad(val);
@@ -305,16 +298,14 @@
             controls.update();
         });
 
-        // I-sync ang Rotation slider kung ang user mo-pan/orbit gamit ang mouse
         controls.addEventListener('change', () => {
             let angle = THREE.MathUtils.radToDeg(controls.getAzimuthalAngle());
-            angle = (angle % 360 + 360) % 360; // Para magpabilin from 0-360
+            angle = (angle % 360 + 360) % 360; 
             rotSlider.value = angle;
             rotVal.textContent = Math.round(angle) + '°';
             updateSliderTrack(rotSlider);
         });
 
-        // Action kung tandugon ang Water slider
         waterSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             waterVal.textContent = val + '%';
@@ -323,14 +314,31 @@
             waterMesh.visible = val > 0;
         });
 
-        // Initial trigger sa pag-load sa website
         rotSlider.dispatchEvent(new Event('input'));
         waterSlider.dispatchEvent(new Event('input'));
 
+        // --- ANIMATION LOOP (Gi-update para sa DAGKONG Balod) ---
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
             updateLabels();
+
+            const time = Date.now() * 0.0015; 
+            const waterPos = waterGeo.attributes.position;
+            
+            for(let i = 0; i < waterPos.count; i++) {
+                const x = waterPos.getX(i);
+                const z = waterPos.getZ(i);
+                
+                // Gipadako ang multiplier ngadto sa 1.2 ug 0.8 para dagko ang balod
+                // Gikubsan ang frequency (0.2 ug 0.3) para mulapad ug mas realistic
+                const waveHeight = Math.sin(x * 0.2 + time) * 1.2 + Math.cos(z * 0.3 + time * 1.2) * 0.8;
+                waterPos.setY(i, waveHeight);
+            }
+            
+            waterGeo.computeVertexNormals(); 
+            waterPos.needsUpdate = true; 
+
             renderer.render(scene, camera);
         }
         animate();
